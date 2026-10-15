@@ -8,56 +8,82 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    /* High-Precision Overrides for the Exact 202398.jpg Masterpiece */
+    /* =========================================================
+       EXACT 202398.JPG 3-LAYER PIXEL ANIMATION OVERRIDES
+       ========================================================= */
     .emblem-stage-202398 {
       position: relative;
-      width: min(340px, 88vw);
-      height: min(240px, 62vw);
+      width: min(330px, 86vw);
+      height: min(330px, 86vw);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 4;
     }
-    .master-logo-svg {
+
+    .exact-layer-canvas {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
-      overflow: visible;
+      pointer-events: none;
+      display: none;
     }
-    /* Step 1: Thorny Gothic Words Materialize */
-    .layer-words-202398 {
+
+    /* When logo.jpg (202398.jpg) is loaded, display the 3 exact pixel layers and hide the fallback vector */
+    .emblem-stage-202398.exact-image-loaded .exact-layer-canvas {
+      display: block;
+    }
+
+    .emblem-stage-202398.exact-image-loaded .fallback-vector-stage {
+      display: none !important;
+    }
+
+    /* Layer 1: Exact Thorny Words ("el.zavianzz") Materialize */
+    #exact-words-canvas {
+      z-index: 4;
       opacity: 0;
-      transform-origin: center;
     }
-    .play-seq .layer-words-202398 {
+
+    .play-seq #exact-words-canvas {
       animation: exactWordsIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
     }
+
     @keyframes exactWordsIn {
       0% { opacity: 0; filter: blur(10px) brightness(2.4); transform: scale(0.88); }
       100% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); }
     }
-    /* Step 2: Filigree Sword Drops Behind & Through the 'v' */
-    .layer-sword-202398 {
+
+    /* Layer 2: Exact Filigree Sword Drops From Top Behind the 'v' */
+    #exact-sword-canvas {
+      z-index: 3;
       opacity: 0;
       transform: translateY(-420px);
     }
-    .play-seq .layer-sword-202398 {
+
+    .play-seq #exact-sword-canvas {
       animation: exactSwordDrop 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.9s forwards;
     }
+
     @keyframes exactSwordDrop {
       0% { opacity: 1; transform: translateY(-420px); }
       80% { opacity: 1; transform: translateY(6px); }
       100% { opacity: 1; transform: translateY(0); }
     }
-    /* Step 3: Ink-Shaded Dragon Crest Locks in After 3D Orbit */
-    .layer-dragon-202398 {
+
+    /* Layer 3: Exact Dragon Crest Ignites Smoothly as the Revolving Dragon Merges Into It */
+    #exact-dragon-canvas {
+      z-index: 5;
       opacity: 0;
-      transform-origin: 800px 260px;
     }
-    .play-seq .layer-dragon-202398 {
-      animation: exactDragonLock 0.55s cubic-bezier(0.16, 1, 0.3, 1) 3.1s forwards;
+
+    .play-seq #exact-dragon-canvas,
+    .play-seq .logo-dragon-crest {
+      animation: exactDragonLock 0.6s cubic-bezier(0.16, 1, 0.3, 1) 2.72s forwards !important;
     }
+
     @keyframes exactDragonLock {
-      0% { opacity: 0; transform: scale(1.16); filter: brightness(2.5) blur(3px); }
+      0% { opacity: 0; transform: scale(1.12); filter: brightness(2.5) blur(3px); }
       100% { opacity: 1; transform: scale(1); filter: brightness(1); }
     }
   </style>
@@ -65,28 +91,10 @@
 <body>
 
   <!-- =========================================================
-       0. MASTER SVG DEFINITIONS (PIXEL-ACCURATE 202398.JPG + 202327.JPG)
+       0. MASTER SVG DEFINITIONS (202327.JPG LOADING SPINNER & CREST)
        ========================================================= -->
   <svg width="0" height="0" style="position:absolute; pointer-events:none;">
     <defs>
-      <!-- Smoky Charcoal-Crimson Grunge Texture Filter (Matches 202398.jpg Fill) -->
-      <filter id="crimson-grunge-202398" x="-10%" y="-10%" width="120%" height="120%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="4" seed="7" result="noise"/>
-        <feColorMatrix type="matrix" values="
-          1 0 0 0 0
-          0 1 0 0 0
-          0 0 1 0 0
-          0 0 0 0.42 0.65" in="noise" result="grungeMask"/>
-        <feComposite operator="in" in="grungeMask" in2="SourceGraphic" result="textured"/>
-        <feBlend mode="multiply" in="SourceGraphic" in2="textured"/>
-      </filter>
-
-      <linearGradient id="crimsonInkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#ff1a22"/>
-        <stop offset="55%" stop-color="#e50914"/>
-        <stop offset="100%" stop-color="#8a0309"/>
-      </linearGradient>
-
       <linearGradient id="dragon202327Grad" x1="0%" y1="0%" x2="85%" y2="100%">
         <stop offset="0%" stop-color="#ff1a1a" />
         <stop offset="60%" stop-color="#e50914" />
@@ -94,7 +102,7 @@
         <stop offset="100%" stop-color="#2d3a3a" />
       </linearGradient>
 
-      <!-- DRAGON DESIGN FOR LOADING SPINNER (202327.JPG) -->
+      <!-- DRAGON SYMBOL (202327.JPG) -->
       <symbol id="dragon-crest-202327" viewBox="0 0 500 500">
         <path fill="url(#dragon202327Grad)" d="
           M 68,225 L 76,204 L 106,188 L 104,174 L 146,144
@@ -137,287 +145,44 @@
   </div>
 
   <!-- =========================================================
-       2. OPENING & CLOSING ANIMATION PORTAL (1:1 202398.JPG MASTERPIECE)
+       2. OPENING & CLOSING ANIMATION PORTAL (EXACT 202398.JPG + 3D ORBIT)
        ========================================================= -->
   <div id="vault-portal">
     <div class="emblem-circle play-seq" id="emblem-circle">
-      <!-- Back 3D Orbit Layer (Serpentine Dragon 202378 passes behind words) -->
+      <!-- 3D Back Orbit Layer (Revolving Dragon passes BEHIND words) -->
       <canvas id="dragon-canvas-back" width="460" height="460"></canvas>
 
-      <div class="emblem-stage-202398">
-        <!-- 1:1 PIXEL-ACCURATE VECTOR RECONSTRUCTION OF 202398.JPG -->
-        <svg class="master-logo-svg" viewBox="40 100 940 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <div class="emblem-stage-202398" id="emblem-stage-box">
+        <!-- 100% PIXEL-IDENTICAL ANIMATED LAYERS EXTRACTED FROM logo.jpg (202398.jpg) -->
+        <canvas id="exact-sword-canvas" class="exact-layer-canvas" width="1000" height="1000"></canvas>
+        <canvas id="exact-words-canvas" class="exact-layer-canvas" width="1000" height="1000"></canvas>
+        <canvas id="exact-dragon-canvas" class="exact-layer-canvas" width="1000" height="1000"></canvas>
 
-          <!-- =====================================================
-               LAYER A: THE ORNATE FILIGREE BROADSWORD (BEHIND THE 'V')
-               ===================================================== -->
-          <g class="layer-sword-202398" filter="url(#crimson-grunge-202398)">
-            <g transform="translate(425, 225) rotate(-17) translate(-425, -225)">
-              <!-- 1. Ornate 3-Lobed Gothic Trefoil Pommel -->
-              <path fill="#e50914" d="
-                M 425,105
-                C 429,112 436,113 438,118
-                C 434,122 431,126 430,132
-                L 420,132
-                C 419,126 416,122 412,118
-                C 414,113 421,112 425,105 Z
-              "/>
-              <!-- Black Filigree Engraving Inside Pommel -->
-              <path d="M425,110 L428,118 L425,126 L422,118 Z M416,117 L422,119 M434,117 L428,119" stroke="#000" stroke-width="1.8"/>
+        <!-- Automatic Vector Fallback (If logo.jpg is not uploaded yet) -->
+        <div class="emblem-stage fallback-vector-stage">
+          <div class="logo-sword-wrap">
+            <svg viewBox="0 0 90 240" fill="none">
+              <path d="M45,2 C48,7 52,9 53,13 C50,16 48,18 47,22 L43,22 C42,18 40,16 37,13 C38,9 42,7 45,2 Z" fill="#e50914"/>
+              <circle cx="45" cy="12" r="1.8" fill="#000"/>
+              <path d="M42.5,21 L47.5,21 L48.5,48 L41.5,48 Z" fill="#9e0209"/>
+              <path d="M 16,47 C 23,44 30,45 36,48 C 33,43 29,41 25,40 C 32,40 38,44 42,48 L 45,44 L 48,48 C 52,44 58,40 65,40 C 61,41 57,43 54,48 C 60,45 67,44 74,47 C 67,50 61,53 57,58 C 57,54 54,52 49,53 C 47,55 46,59 45,64 C 44,59 43,55 41,53 C 36,52 33,54 33,58 C 29,53 23,50 16,47 Z" fill="#e50914"/>
+              <polygon points="40.5,53 45,59 45,236 39,168" fill="#e50914"/>
+              <polygon points="49.5,53 45,59 45,236 51,168" fill="#8f0208"/>
+              <line x1="45" y1="58" x2="45" y2="195" stroke="#000" stroke-width="1.8"/>
+            </svg>
+          </div>
 
-              <!-- 2. Waisted Wire-Wrapped Hilt Grip (5 Diagonal Ribs) -->
-              <path fill="#d40610" d="M420,132 C421,152 419,174 417,196 L433,196 C431,174 429,152 430,132 Z"/>
-              <path d="
-                M419,142 L431,146
-                M419,153 L431,157
-                M418,164 L432,168
-                M418,175 L432,179
-                M417,186 L433,190
-              " stroke="#000000" stroke-width="2.4"/>
+          <div class="logo-dragon-crest">
+            <svg viewBox="0 0 500 500" width="100%" height="100%">
+              <use href="#dragon-crest-202327"></use>
+            </svg>
+          </div>
 
-              <!-- 3. Ornate Bat-Wing Filigree Crossguard with Upward Inner Horns -->
-              <path fill="#e50914" d="
-                M 362,208
-                C 376,204 390,206 404,210
-                C 398,200 390,194 382,191
-                C 394,191 406,197 414,205
-                L 418,195 L 425,202 L 432,195 L 436,205
-                C 444,197 456,191 468,191
-                C 460,194 452,200 446,210
-                C 460,206 474,204 488,208
-                C 476,214 466,222 458,232
-                C 458,224 452,218 442,218
-                L 438,228
-                L 412,228
-                L 408,218
-                C 398,218 392,224 392,232
-                C 384,222 374,214 362,208 Z
-              "/>
-              <!-- Intricate Black Filigree Cutouts Inside Crossguard -->
-              <path d="
-                M 378,209 C 392,209 404,213 414,218
-                M 472,209 C 458,209 446,213 436,218
-                M 425,204 L 429,215 L 425,225 L 421,215 Z
-              " stroke="#000000" stroke-width="2.2" fill="none"/>
-
-              <!-- 4. Barbed Ricasso (Wide Jagged Upper Blade Shoulders Below Guard) & Long Tapering Blade -->
-              <path fill="#e50914" d="
-                M 412,226
-                C 412,238 404,248 396,254
-                C 404,256 410,262 413,272
-                L 425,585
-                L 437,272
-                C 440,262 446,256 454,254
-                C 446,248 438,238 438,226 Z
-              "/>
-              <!-- Right-Half Blade Shading & Central Black Blood-Groove (Fuller) + Battle Scratches -->
-              <path fill="#8f0208" d="M 425,226 L 425,585 L 437,272 C 440,262 446,256 454,254 C 446,248 438,238 438,226 Z"/>
-              <path d="
-                M 425,226 L 425,535
-                M 416,242 L 425,256 L 434,242
-                M 417,305 L 429,318
-                M 421,465 L 431,478
-                M 420,502 L 429,512
-              " stroke="#000000" stroke-width="2.4" fill="none"/>
-            </g>
-          </g>
-
-          <!-- =====================================================
-               LAYER B: INK-SHADED DARK-FANTASY DRAGON CREST (202398.JPG)
-               (Detailed Snout, Nasal Horn, 15 Teeth, 7 Shaded Horns,
-                Overlapping Belly Scales & 3 Sweeping Dorsal Spines)
-               ===================================================== -->
-          <g class="layer-dragon-202398" filter="url(#crimson-grunge-202398)">
-            <!-- 1. Three Long Sweeping Dorsal Neck Spines Arching Down-Right Over 'zz' -->
-            <!-- Spine 1 (Upper Right Arch) -->
-            <path fill="#e50914" d="M 812,226 C 865,222 918,238 958,268 C 915,252 868,246 822,246 Z"/>
-            <path fill="#000000" d="M 822,240 C 868,240 912,248 948,264 C 910,252 865,246 822,246 Z"/>
-            <!-- Spine 2 (Long Middle Arch) -->
-            <path fill="#e50914" d="M 832,244 C 892,252 938,288 962,344 C 928,302 882,274 834,264 Z"/>
-            <path fill="#000000" d="M 838,258 C 884,268 925,296 952,334 C 920,300 878,274 834,264 Z"/>
-            <!-- Spine 3 (Lower Inner Arch) -->
-            <path fill="#d40610" d="M 842,268 C 884,284 912,316 924,358 C 898,324 868,298 836,284 Z"/>
-
-            <!-- 2. C-Curved Muscular Neck & 7 Overlapping Ink-Shaded Ventral Belly Scales -->
-            <path fill="#e50914" d="
-              M 762,258
-              C 818,242 872,268 884,312
-              C 892,342 872,368 835,378
-              L 778,365
-              C 815,345 832,320 824,296
-              C 816,274 792,264 762,268 Z
-            "/>
-            <!-- Deep Black Ink Scale Lines Creating the Overlapping Belly Plates in 202398.jpg -->
-            <path d="
-              M 776,268 C 796,262 818,268 832,282
-              M 792,280 C 814,274 836,282 848,298
-              M 804,294 C 826,290 848,298 858,316
-              M 810,310 C 832,308 854,318 862,336
-              M 808,326 C 830,326 850,336 856,354
-              M 798,342 C 820,344 838,354 842,368
-              M 848,262 C 875,282 882,322 858,358
-            " stroke="#000000" stroke-width="4.2" stroke-linecap="round" fill="none"/>
-
-            <!-- 3. Seven Layered, Swept-Back Dragon Crown & Cheek Horns (With Black Ink Under-Shading) -->
-            <!-- Horn 1 (Topmost Steep Spike) -->
-            <path fill="#e50914" d="M 728,214 C 748,186 768,164 792,146 C 776,174 762,198 748,218 Z"/>
-            <path fill="#000000" d="M 738,216 C 756,192 772,172 790,150 C 776,176 762,198 748,218 Z"/>
-            <!-- Horn 2 -->
-            <path fill="#e50914" d="M 746,210 C 774,184 804,166 838,154 C 812,178 786,198 764,216 Z"/>
-            <path fill="#000000" d="M 756,213 C 782,190 808,174 834,158 C 810,180 786,198 764,216 Z"/>
-            <!-- Horn 3 (Longest Primary Swept Horn) -->
-            <path fill="#ff1e27" d="M 758,214 C 802,188 852,172 904,168 C 862,188 820,208 782,226 Z"/>
-            <path fill="#000000" d="M 770,221 C 810,198 854,184 898,172 C 858,192 818,210 782,226 Z"/>
-            <!-- Horn 4 -->
-            <path fill="#e50914" d="M 772,226 C 818,208 868,202 918,206 C 874,218 832,230 792,240 Z"/>
-            <path fill="#000000" d="M 782,234 C 824,218 868,212 912,209 C 870,220 830,232 792,240 Z"/>
-            <!-- Horn 5 (Upper Cheek Spike) -->
-            <path fill="#e50914" d="M 756,244 C 788,236 822,236 854,244 C 822,248 792,252 764,256 Z"/>
-            <!-- Horn 6 (Mid Cheek Spike) -->
-            <path fill="#e50914" d="M 748,258 C 774,254 800,256 824,264 C 798,266 774,268 752,268 Z"/>
-            <!-- Horn 7 (Lower Jaw Rear Spike) -->
-            <path fill="#d40610" d="M 738,272 C 758,272 778,276 794,286 C 774,284 756,282 740,280 Z"/>
-
-            <!-- 4. Detailed Reptilian Skull, Wrinkled Snout, Nasal Horn & Open Roaring Jaws -->
-            <!-- Upper Skull & Snout -->
-            <path fill="#e50914" d="
-              M 664,264
-              C 662,254 668,246 676,244
-              L 674,234 L 684,242
-              C 700,236 716,226 732,214
-              L 768,218
-              L 754,256
-              L 724,262
-              C 704,262 684,266 668,272 Z
-            "/>
-            <!-- Wrinkled Snout Bridge Ink Lines & Nostril -->
-            <path d="
-              M 672,256 C 688,250 706,244 722,236
-              M 678,262 C 696,256 714,250 730,242
-              M 692,246 L 702,254
-              M 706,240 L 716,248
-            " stroke="#000000" stroke-width="2.4" stroke-linecap="round"/>
-            <ellipse cx="673" cy="258" rx="3.2" ry="1.8" transform="rotate(-20 673 258)" fill="#000000"/>
-
-            <!-- Recessed Black Eye Socket & Bright Red Pinpoint Pupil -->
-            <path fill="#000000" d="M 714,238 C 724,230 736,228 746,230 C 738,238 726,242 714,238 Z"/>
-            <circle cx="728" cy="235" r="2.4" fill="#ff2a32"/>
-
-            <!-- Roaring Lower Jaw & Chin Spikes -->
-            <path fill="#e50914" d="
-              M 738,256
-              L 752,274
-              C 734,286 714,296 692,304
-              L 686,298 L 680,302 L 676,294
-              C 694,284 714,272 730,258 Z
-            "/>
-            <path d="M 684,296 C 704,288 724,278 742,266" stroke="#000000" stroke-width="2.2" fill="none"/>
-
-            <!-- 5. Individual Razor Teeth (8 Upper Teeth + 7 Lower Teeth Inside Black Mouth Cavity) -->
-            <polygon points="672,270 675,279 678,269" fill="#e50914"/>
-            <polygon points="679,268 682,277 685,267" fill="#ff1e27"/>
-            <polygon points="686,266 689,275 692,265" fill="#e50914"/>
-            <polygon points="693,265 696,273 699,264" fill="#ff1e27"/>
-            <polygon points="700,264 703,272 706,263" fill="#e50914"/>
-            <polygon points="707,263 710,270 713,262" fill="#ff1e27"/>
-            <polygon points="714,262 717,269 720,261" fill="#e50914"/>
-            <polygon points="721,261 724,267 727,260" fill="#e50914"/>
-
-            <!-- Lower Teeth -->
-            <polygon points="680,294 682,285 686,291" fill="#ff1e27"/>
-            <polygon points="687,290 689,282 693,287" fill="#e50914"/>
-            <polygon points="694,286 696,278 700,283" fill="#ff1e27"/>
-            <polygon points="701,282 703,275 707,279" fill="#e50914"/>
-            <polygon points="708,278 710,271 714,275" fill="#ff1e27"/>
-            <polygon points="715,274 717,268 721,271" fill="#e50914"/>
-          </g>
-
-          <!-- =====================================================
-               LAYER C: PIXEL-TRACED THORNY BLACKLETTER "el.zavianzz"
-               (Sits IN FRONT OF the upper sword so the sword pierces 'v'!)
-               ===================================================== -->
-          <g class="layer-words-202398" filter="url(#crimson-grunge-202398)" fill="#e50914" stroke="#000000" stroke-width="3.5" stroke-linejoin="miter">
-
-            <!-- 'e' (Thorny top-left horn, angled eye, notched stems, jagged base) -->
-            <path fill-rule="evenodd" d="
-              M 68,334 L 92,352 L 142,352 L 160,368 L 154,386 L 162,394 L 106,418
-              L 106,440 L 128,440 L 128,424 L 158,424 L 154,444 L 164,458 L 140,466
-              L 118,460 L 94,468 L 58,460 L 76,444 L 74,412 L 68,398 L 76,384 L 74,356 Z
-              M 104,372 L 104,398 L 128,386 L 128,372 Z
-            "/>
-
-            <!-- 'l' (Tall thorny vertical pillar with razor top-right peak) -->
-            <path d="
-              M 172,318 L 210,298 L 206,348 L 214,364 L 206,380 L 208,442
-              L 226,462 L 194,466 L 168,460 L 178,444 L 176,396 L 168,382 L 176,368 Z
-            "/>
-
-            <!-- '.' (Sharp Diamond Period) -->
-            <polygon points="252,428 270,446 252,464 234,446"/>
-
-            <!-- 'z' #1 (Hooked top-left serif, thorny diagonal, hooked bottom-right serif) -->
-            <path d="
-              M 284,344 L 302,352 L 368,352 L 358,374 L 322,442 L 352,442
-              L 364,432 L 360,464 L 332,462 L 308,468 L 280,462 L 292,438
-              L 328,372 L 298,372 L 286,382 Z
-            "/>
-
-            <!-- 'a' #1 (Angular thorny gothic 'a' with internal cutout) -->
-            <path fill-rule="evenodd" d="
-              M 380,362 L 418,348 L 456,362 L 454,394 L 462,406 L 454,418 L 456,446
-              L 466,460 L 440,466 L 424,454 L 404,466 L 376,456 L 374,414 L 424,396
-              L 424,372 L 404,372 L 402,386 L 376,382 Z
-              M 404,416 L 404,442 L 424,442 L 424,408 Z
-            "/>
-
-            <!-- 'v' (Horned serifs, thorny sides, overlaps the sword!) -->
-            <path d="
-              M 454,352 L 494,352 L 486,368 L 504,432 L 522,368 L 514,352
-              L 552,352 L 542,368 L 538,392 L 546,402 L 534,416 L 502,474
-              L 474,418 L 464,404 L 472,390 L 464,368 Z
-            "/>
-
-            <!-- 'i' (Diamond tittle dot + thorny stem) -->
-            <polygon points="576,298 592,314 576,330 560,314"/>
-            <path d="
-              M 556,356 L 594,348 L 592,388 L 600,400 L 592,414 L 592,444
-              L 604,460 L 578,466 L 554,460 L 562,444 L 562,372 Z
-            "/>
-
-            <!-- 'a' #2 (Matching thorny gothic 'a') -->
-            <path fill-rule="evenodd" d="
-              M 612,362 L 650,348 L 688,362 L 686,394 L 694,406 L 686,418 L 688,446
-              L 698,460 L 672,466 L 656,454 L 636,466 L 608,456 L 606,414 L 656,396
-              L 656,372 L 636,372 L 634,386 L 608,382 Z
-              M 636,416 L 636,442 L 656,442 L 656,408 Z
-            "/>
-
-            <!-- 'n' (Right stem drops below baseline into a long razor fang like 202398.jpg!) -->
-            <path d="
-              M 704,356 L 738,348 L 738,364 L 764,348 L 792,362 L 790,396
-              L 798,408 L 790,422 L 790,446 L 802,462 L 780,468 L 774,496
-              L 756,458 L 758,376 L 738,376 L 738,446 L 746,460 L 722,466
-              L 700,460 L 708,444 L 708,372 Z
-            "/>
-
-            <!-- 'z' #2 -->
-            <path d="
-              M 808,344 L 826,352 L 892,352 L 882,374 L 846,442 L 876,442
-              L 888,432 L 884,464 L 856,462 L 832,468 L 804,462 L 816,438
-              L 852,372 L 822,372 L 810,382 Z
-            "/>
-
-            <!-- 'z' #3 (With the signature upward horn spike at the top-right corner!) -->
-            <path d="
-              M 898,344 L 916,352 L 964,352 L 986,334 L 972,374 L 936,442
-              L 966,442 L 978,432 L 974,464 L 946,462 L 922,468 L 894,462
-              L 906,438 L 942,372 L 912,372 L 900,382 Z
-            "/>
-          </g>
-        </svg>
+          <div class="logo-text-gothic">el.zavianzz</div>
+        </div>
       </div>
 
-      <!-- Front 3D Orbit Layer (Serpentine Dragon 202378 passes in front of words) -->
+      <!-- 3D Front Orbit Layer (Revolving Dragon passes IN FRONT of words) -->
       <canvas id="dragon-canvas-front" width="460" height="460"></canvas>
     </div>
 

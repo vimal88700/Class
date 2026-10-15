@@ -1,9 +1,6 @@
 /* =========================================================
-   DRAGON ENGINE, SPECIAL FX & NETWORK LOADER (dragon-engine.js)
-   - Uses Dragon #2 (202378.jpg: Serpentine Ribbed-Belly Dragon with Claws & Wavy Tongue)
-     to revolve in 3D around the words "el.zavianzz".
-   - Locks into Dragon #1 (202327.jpg: Red Tribal Crest) above "ianzz".
-   - Powers the 202327.jpg Network Loading Spinner & Video Opening Special FX.
+   PIXEL-EXACT 202398.JPG LAYER SEPARATOR & SMOOTH PARAMETRIC
+   DRAGON ORBIT ENGINE (dragon-engine.js)
    ========================================================= */
 
 const backCanvas = document.getElementById('dragon-canvas-back');
@@ -13,16 +10,109 @@ const frontCtx = frontCanvas ? frontCanvas.getContext('2d') : null;
 
 let orbitAnimId = null;
 let orbitStartTime = 0;
-const spineTrail = [];
 const emberList = [];
-const MAX_SPINE_NODES = 46;
+const NUM_SEGMENTS = 44;
+const SEG_SPACING = 0.0095;
 
 let sfxActive = true;
 let audioCtx = null;
 let portalTimer = null;
 
 /* =========================================================
-   1. NETWORK & MEDIA LOADER CONTROLLER (USES 202327.JPG LOGO)
+   1. AUTOMATIC PIXEL-LEVEL LAYER SPLITTER FOR logo.jpg (202398.jpg)
+      Splits 202398.jpg into 3 independent transparent layers:
+      - Words ("el.zavianzz")
+      - Sword (drops from top behind "v")
+      - Dragon (locks in at top-right after orbit)
+   ========================================================= */
+function initExactLogoLayers() {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = "logo.jpg"; // Upload 202398.jpg as logo.jpg in GitHub root
+
+  img.onload = () => {
+    const W = 1000;
+    const H = 1000;
+
+    const srcCanvas = document.createElement('canvas');
+    srcCanvas.width = W;
+    srcCanvas.height = H;
+    const sCtx = srcCanvas.getContext('2d');
+    sCtx.drawImage(img, 0, 0, W, H);
+    const srcData = sCtx.getImageData(0, 0, W, H);
+    const d = srcData.data;
+
+    const wordsData = sCtx.createImageData(W, H);
+    const swordData = sCtx.createImageData(W, H);
+    const dragonData = sCtx.createImageData(W, H);
+
+    const wPx = wordsData.data;
+    const sPx = swordData.data;
+    const dPx = dragonData.data;
+
+    for (let y = 0; y < H; y++) {
+      const ny = y / H;
+      for (let x = 0; x < W; x++) {
+        const nx = x / W;
+        const i = (y * W + x) * 4;
+        const r = d[i];
+        const g = d[i + 1];
+        const b = d[i + 2];
+
+        // Convert pure black background (#000000) to transparent
+        const maxC = Math.max(r, g, b);
+        if (maxC < 18) continue;
+        const alpha = Math.min(255, Math.round((maxC - 15) * 2.2));
+
+        // 1. DRAGON REGION (Top-right quadrant above "ianzz")
+        const isDragon =
+          (nx > 0.64 && ny > 0.30 && ny < 0.518) ||
+          (nx > 0.912 && ny >= 0.518 && ny < 0.565);
+
+        // 2. SWORD REGION (Upper hilt/crossguard above "av" + lower blade tip below "v")
+        const isUpperSword = (nx > 0.34 && nx < 0.51 && ny > 0.28 && ny < 0.532);
+        const isLowerSword = (nx > 0.475 && nx < 0.565 && ny > 0.638 && ny < 0.77);
+
+        if (isDragon) {
+          dPx[i] = r; dPx[i + 1] = g; dPx[i + 2] = b; dPx[i + 3] = alpha;
+        } else if (isUpperSword || isLowerSword) {
+          sPx[i] = r; sPx[i + 1] = g; sPx[i + 2] = b; sPx[i + 3] = alpha;
+        } else {
+          wPx[i] = r; wPx[i + 1] = g; wPx[i + 2] = b; wPx[i + 3] = alpha;
+        }
+      }
+    }
+
+    // Bridge the middle of the sword blade behind the "v" so the falling sword is 100% continuous
+    const cWords = document.getElementById('exact-words-canvas');
+    const cSword = document.getElementById('exact-sword-canvas');
+    const cDragon = document.getElementById('exact-dragon-canvas');
+
+    if (cWords && cSword && cDragon) {
+      cWords.getContext('2d').putImageData(wordsData, 0, 0);
+
+      const swCtx = cSword.getContext('2d');
+      swCtx.putImageData(swordData, 0, 0);
+      swCtx.save();
+      swCtx.strokeStyle = '#b8040c';
+      swCtx.lineWidth = 14;
+      swCtx.beginPath();
+      swCtx.moveTo(458, 525);
+      swCtx.lineTo(498, 645);
+      swCtx.stroke();
+      swCtx.restore();
+
+      cDragon.getContext('2d').putImageData(dragonData, 0, 0);
+
+      // Switch stage from fallback SVG to exact pixel layers
+      const stage = document.getElementById('emblem-stage-box');
+      if (stage) stage.classList.add('exact-image-loaded');
+    }
+  };
+}
+
+/* =========================================================
+   2. NETWORK & MEDIA LOADER CONTROLLER
    ========================================================= */
 function showNetworkLoader(message = "Syncing Vault...") {
   const loader = document.getElementById('network-dragon-loader');
@@ -39,7 +129,7 @@ function hideNetworkLoader(delay = 350) {
 }
 
 /* =========================================================
-   2. SYNTHESIZED WEB AUDIO SOUND ENGINE
+   3. SYNTHESIZED WEB AUDIO SOUND ENGINE
    ========================================================= */
 function initAudioEngine() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -107,60 +197,68 @@ function toggleAudioSFX() {
 }
 
 /* =========================================================
-   3. SERPENTINE DRAGON #2 (202378.JPG) 3D ORBIT ENGINE
-      Draws the ribbed belly scales, dorsal flame spikes,
-      4-toed dragon claws, horned head & wavy tongue revolving
-      around the words "el.zavianzz"
+   4. BUG-FREE PARAMETRIC 3D DRAGON ORBIT ENGINE
+      - Evaluates every segment mathematically along u in [0, 1]
+      - Never bunches up or snaps angle at the end!
+      - Tail smoothly slithers into the perched dragon crest!
    ========================================================= */
-function spawnOrbitEmber(x, y, vx, vy) {
-  emberList.push({
-    x, y,
-    vx: vx + (Math.random() - 0.5) * 1.2,
-    vy: vy + (Math.random() - 0.5) * 1.2,
-    r: 1.4 + Math.random() * 2.2,
-    alpha: 0.9,
-    color: Math.random() > 0.25 ? '#e50914' : '#ff3b1f'
-  });
+function spawnOrbitEmber(x, y, vx, vy, burst = false) {
+  const count = burst ? 10 : 1;
+  for (let i = 0; i < count; i++) {
+    emberList.push({
+      x: x + (Math.random() - 0.5) * (burst ? 18 : 6),
+      y: y + (Math.random() - 0.5) * (burst ? 18 : 6),
+      vx: vx + (Math.random() - 0.5) * (burst ? 3.5 : 1.2),
+      vy: vy + (Math.random() - 0.5) * (burst ? 3.5 : 1.2),
+      r: (burst ? 2.2 : 1.3) + Math.random() * 2.2,
+      alpha: 0.95,
+      color: Math.random() > 0.25 ? '#e50914' : '#ff3b1f'
+    });
+  }
 }
 
-// Draws the 4-Clawed Tribal Dragon Leg (From 202378.jpg)
-function drawSerpentClawLimb(ctx, x, y, bodyAngle, scale, alpha, side = 1) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(bodyAngle);
-  ctx.scale(scale, scale * side);
-  ctx.globalAlpha = alpha;
+// Continuous 3D Parametric Curve for u in [0, 1.0]
+function evaluateDragonCurve(u) {
+  const clamped = Math.max(0, Math.min(1, u));
+  // 1.45 revolutions around "el.zavianzz", approaching top-right from the right-arch so it faces down-left!
+  const theta = -Math.PI * 0.65 + clamped * (Math.PI * 2.85);
+  const slither = Math.sin(clamped * Math.PI * 6) * 6 * (1 - clamped);
 
-  ctx.fillStyle = '#e50914';
-  ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 1.2;
+  const orbitX = 230 + Math.cos(theta) * 135;
+  const orbitY = 238 + Math.sin(theta) * 46 - Math.cos(theta) * 20 + slither;
+  const orbitZ = Math.sin(theta);
 
-  // Muscular bent limb + 4 curved talons
-  ctx.beginPath();
-  ctx.moveTo(4, 3);
-  ctx.quadraticCurveTo(-8, 16, -2, 24);
-  ctx.lineTo(10, 22);
-  // Talon 1
-  ctx.quadraticCurveTo(18, 26, 15, 34);
-  ctx.quadraticCurveTo(12, 28, 7, 26);
-  // Talon 2
-  ctx.quadraticCurveTo(13, 32, 9, 39);
-  ctx.quadraticCurveTo(7, 32, 3, 28);
-  // Talon 3
-  ctx.quadraticCurveTo(7, 34, 2, 40);
-  ctx.quadraticCurveTo(1, 33, -2, 28);
-  // Rear dewclaw
-  ctx.quadraticCurveTo(-8, 32, -12, 26);
-  ctx.quadraticCurveTo(-14, 16, -6, 4);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+  // Final perch coordinates right over "ianzz", curving down-left to match 202398.jpg dragon head angle
+  const p0x = 345, p0y = 215;
+  const p1x = 325, p1y = 165;
+  const p2x = 278, p2y = 188;
 
-  ctx.restore();
+  const b = Math.max(0, (clamped - 0.68) / 0.32);
+  const sb = b * b * (3 - 2 * b);
+
+  // Quadratic curve for the final approach so tangent at u=1 points down-left (toward "ianzz")
+  const landX = (1 - sb) * (1 - sb) * p0x + 2 * (1 - sb) * sb * p1x + sb * sb * p2x;
+  const landY = (1 - sb) * (1 - sb) * p0y + 2 * (1 - sb) * sb * p1y + sb * sb * p2y;
+
+  return {
+    x: orbitX * (1 - sb) + landX * sb,
+    y: orbitY * (1 - sb) + landY * sb,
+    z: orbitZ * (1 - sb) + 1 * sb
+  };
 }
 
-// Draws the Horned Tribal Head, Fangs & Long Wavy S-Tongue of 202378.jpg
-function drawSerpentHead202378(ctx, x, y, angle, scale, alpha, wavePhase) {
+// Analytical tangent angle so the head NEVER snaps to 0deg when reaching the end
+function evaluateDragonTangent(u) {
+  const eps = 0.004;
+  const u1 = Math.max(0, Math.min(0.996, u - eps));
+  const u2 = Math.min(1.0, u1 + eps * 2);
+  const p1 = evaluateDragonCurve(u1);
+  const p2 = evaluateDragonCurve(u2);
+  return Math.atan2(p2.y - p1.y, p2.x - p1.x);
+}
+
+// Draws the Fierce Horned Dragon Head matching 202327.jpg / 202398.jpg
+function drawOrbitDragonHead(ctx, x, y, angle, scale, alpha) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
@@ -169,98 +267,43 @@ function drawSerpentHead202378(ctx, x, y, angle, scale, alpha, wavePhase) {
 
   ctx.shadowBlur = 12;
   ctx.shadowColor = '#e50914';
-
-  // Long Wavy Forked Tongue (Signature detail of 202378.jpg)
-  const tongueWave = Math.sin(wavePhase) * 4;
-  ctx.strokeStyle = '#ff1e27';
-  ctx.lineWidth = 2.2;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(14, 4);
-  ctx.bezierCurveTo(26, 4 + tongueWave, 32, -4 - tongueWave, 44, 2 + tongueWave * 0.5);
-  ctx.stroke();
-
-  // Upper & Lower Roaring Tribal Jaws + Swept Horns
   ctx.fillStyle = '#e50914';
-  ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 1.3;
+
+  // Sleek Reptilian Snout, Hooked Beak & Swept Crown Horns
   ctx.beginPath();
-  ctx.moveTo(26, -3);                        // Upturned snout tip
-  ctx.lineTo(29, -8);                        // Nasal horn
-  ctx.lineTo(18, -7);
-  ctx.quadraticCurveTo(8, -12, -4, -13);     // Brow ridge
-  ctx.quadraticCurveTo(-22, -20, -44, -26);  // Long S-curved horn 1
-  ctx.quadraticCurveTo(-26, -13, -14, -9);
-  ctx.quadraticCurveTo(-30, -12, -46, -13);  // Horn 2
-  ctx.quadraticCurveTo(-24, -5, -14, -1);
-  ctx.lineTo(-10, 6);                        // Jaw hinge
-  ctx.quadraticCurveTo(-2, 13, 16, 14);      // Open lower jaw
-  ctx.lineTo(20, 9);                         // Lower fang tip
-  ctx.lineTo(15, 11);
-  ctx.quadraticCurveTo(4, 9, 0, 2);          // Mouth interior
-  ctx.lineTo(16, 1);
-  ctx.lineTo(19, 6);                         // Upper fang 1
-  ctx.lineTo(22, 0);
-  ctx.lineTo(24, 5);                         // Upper fang 2
+  ctx.moveTo(24, 1);
+  ctx.lineTo(14, -4);
+  ctx.lineTo(16, -8);
+  ctx.lineTo(6, -6);
+  ctx.lineTo(-6, -11);
+  ctx.quadraticCurveTo(-22, -19, -40, -24); // Swept Horn 1
+  ctx.quadraticCurveTo(-24, -13, -14, -8);
+  ctx.quadraticCurveTo(-28, -12, -42, -13); // Swept Horn 2
+  ctx.quadraticCurveTo(-22, -5, -12, -1);
+  ctx.lineTo(18, 0);
   ctx.closePath();
   ctx.fill();
-  ctx.stroke();
 
-  // Slanted Black Eye Cutout (Matches 202378.jpg)
+  // Open Roaring Lower Jaw
+  ctx.beginPath();
+  ctx.moveTo(-6, 1);
+  ctx.lineTo(17, 7);
+  ctx.lineTo(11, 10);
+  ctx.lineTo(-12, 4);
+  ctx.lineTo(-22, 9);
+  ctx.closePath();
+  ctx.fill();
+
+  // Slanted Black Eye Cutout
   ctx.fillStyle = '#000000';
   ctx.beginPath();
-  ctx.moveTo(10, -5);
-  ctx.lineTo(1, -8);
-  ctx.lineTo(-1, -4);
+  ctx.moveTo(8, -4);
+  ctx.lineTo(0, -7);
+  ctx.lineTo(-2, -3);
   ctx.closePath();
   ctx.fill();
 
   ctx.restore();
-}
-
-// Draws the Flame-Tufted Tail Tip of 202378.jpg
-function drawSerpentFlameTail(ctx, x, y, angle, scale, alpha) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-  ctx.scale(scale, scale);
-  ctx.globalAlpha = alpha;
-
-  ctx.fillStyle = '#e50914';
-  ctx.beginPath();
-  ctx.moveTo(4, 0);
-  ctx.quadraticCurveTo(-8, -10, -24, -14);
-  ctx.quadraticCurveTo(-14, -4, -28, 0);
-  ctx.quadraticCurveTo(-14, 4, -22, 12);
-  ctx.quadraticCurveTo(-8, 8, 4, 0);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
-}
-
-// Computes the 3D S-curving orbital path around "el.zavianzz", ending at top-right perch (282, 162)
-function getSerpentOrbitPoint(t) {
-  const theta = -Math.PI * 0.8 + t * (Math.PI * 3.1);
-  // Serpentine slither wave superimposed on the 3D ellipse
-  const slitherWave = Math.sin(t * Math.PI * 7) * 8 * (1 - t * 0.7);
-
-  const orbitX = 230 + Math.cos(theta) * 136;
-  const orbitY = 238 + Math.sin(theta) * 48 - Math.cos(theta) * 24 + slitherWave;
-  const orbitZ = Math.sin(theta); // > 0 in front of words, < 0 behind words
-
-  // Final perch right over "ianzz" where 202327.jpg crest locks in
-  const perchX = 284;
-  const perchY = 158;
-
-  const settle = Math.max(0, (t - 0.74) / 0.26);
-  const smoothSettle = settle * settle * (3 - 2 * settle);
-
-  return {
-    x: orbitX * (1 - smoothSettle) + perchX * smoothSettle,
-    y: orbitY * (1 - smoothSettle) + perchY * smoothSettle,
-    z: orbitZ * (1 - smoothSettle) + 1 * smoothSettle
-  };
 }
 
 function animateSerpentOrbit(ts) {
@@ -276,7 +319,7 @@ function animateSerpentOrbit(ts) {
     const p = emberList[i];
     p.x += p.vx;
     p.y += p.vy;
-    p.alpha -= 0.024;
+    p.alpha -= 0.025;
     if (p.alpha <= 0) {
       emberList.splice(i, 1);
       continue;
@@ -292,95 +335,96 @@ function animateSerpentOrbit(ts) {
     frontCtx.restore();
   }
 
-  // Orbit flight window: 1180ms to 3150ms
-  const flightStart = 1180;
-  const flightDur = 1940;
+  // Flight Timeline:
+  // 1150ms -> 3450ms: uHead advances smoothly from 0.0 to 1.42.
+  // As each segment passes u = 1.0, it seamlessly enters the perched dragon crest!
+  const flightStart = 1150;
+  const flightSpan = 2250;
 
-  if (elapsed >= flightStart && elapsed <= flightStart + flightDur + 200) {
-    const t = Math.min(1, (elapsed - flightStart) / flightDur);
-    const fadeOut = elapsed > flightStart + flightDur
-      ? Math.max(0, 1 - (elapsed - (flightStart + flightDur)) / 200)
-      : Math.min(1, t * 5);
+  if (elapsed >= flightStart && elapsed <= flightStart + flightSpan) {
+    const progress = (elapsed - flightStart) / flightSpan; // 0.0 -> 1.0
+    const uHead = progress * 1.42; // Head reaches u=1.0 at ~70% of span, then tail slithers in from u=1.0 to 1.42!
 
-    const pt = getSerpentOrbitPoint(t);
-    spineTrail.unshift(pt);
-    if (spineTrail.length > MAX_SPINE_NODES) spineTrail.pop();
+    // Draw segments from tail to head
+    for (let i = NUM_SEGMENTS - 1; i >= 1; i--) {
+      const uSeg = uHead - i * SEG_SPACING;
+      // Only draw segments that have launched (uSeg >= 0) and haven't absorbed into the crest yet (uSeg <= 1.0)
+      if (uSeg < 0 || uSeg > 1.0) continue;
 
-    // Draw Serpentine Body with Ribbed Belly Scales, Dorsal Flame Spikes & 4 Clawed Limbs (202378.jpg)
-    for (let i = spineTrail.length - 1; i >= 1; i--) {
-      const curr = spineTrail[i];
-      const prev = spineTrail[i - 1];
-      const ratio = 1 - i / spineTrail.length;
-      const angle = Math.atan2(prev.y - curr.y, prev.x - curr.x);
+      const curr = evaluateDragonCurve(uSeg);
+      const angle = evaluateDragonTangent(uSeg);
+      const bodyRatio = 1 - i / NUM_SEGMENTS;
 
-      const depthScale = 0.72 + (curr.z + 1) * 0.22;
+      // Smooth fade as segment approaches u = 1.0 (absorbs into the crest)
+      const absorbFade = uSeg > 0.88 ? (1.0 - uSeg) / 0.12 : 1.0;
+      const launchFade = Math.min(1, uHead * 4);
+      const segAlpha = absorbFade * launchFade * (0.25 + bodyRatio * 0.75);
+
+      const depthScale = 0.74 + (curr.z + 1) * 0.22;
       const ctx = curr.z >= 0 ? frontCtx : backCtx;
-      const segAlpha = fadeOut * (0.25 + ratio * 0.75);
-
-      // Draw 4-Clawed Limbs at Front Shoulders (i === 9) and Hind Hips (i === 25)
-      if (i === 9 || i === 25) {
-        drawSerpentClawLimb(ctx, curr.x, curr.y, angle, depthScale * 0.85, segAlpha, 1);
-      }
 
       ctx.save();
       ctx.translate(curr.x, curr.y);
       ctx.rotate(angle);
       ctx.globalAlpha = segAlpha;
 
-      // Slender serpentine body radius (tapers at neck and tail)
-      const r = (1.6 + Math.sin(ratio * Math.PI) * 5.2) * depthScale;
+      const halfW = (1.1 + Math.sin(bodyRatio * Math.PI) * 4.4) * depthScale;
 
-      // 1. Solid Crimson Dorsal Back (Upper Half of Serpent)
-      ctx.fillStyle = curr.z >= 0 ? '#e50914' : '#800006';
+      // Upper Crimson Spine
+      ctx.fillStyle = curr.z >= 0 ? '#e50914' : '#7a0005';
       ctx.beginPath();
-      ctx.rect(-r * 0.9, -r, r * 1.8, r);
+      ctx.moveTo(halfW * 1.7, 0);
+      ctx.lineTo(-halfW, -halfW);
+      ctx.lineTo(-halfW * 0.4, 0);
+      ctx.lineTo(-halfW, halfW);
+      ctx.closePath();
       ctx.fill();
 
-      // 2. Ribbed Belly Scale Segment (Lower Half of Serpent — Signature Ladder Look of 202378.jpg!)
-      ctx.fillStyle = curr.z >= 0 ? '#ff2a32' : '#9e0209';
+      // Ribbed Belly Scale Line (From 202378.jpg / 202398.jpg)
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 1.4 * depthScale;
+      ctx.lineWidth = 1.3 * depthScale;
       ctx.beginPath();
-      ctx.rect(-r * 0.8, 0, r * 1.6, r * 0.95);
-      ctx.fill();
+      ctx.moveTo(0, -halfW * 0.8);
+      ctx.lineTo(-halfW * 0.7, halfW * 0.8);
       ctx.stroke();
 
-      // 3. Swept-Back Dorsal Flame Spikes Along Spine (Matches 202378.jpg)
-      if (i % 2 === 0 && i > 2 && i < spineTrail.length - 4) {
-        ctx.fillStyle = '#e50914';
+      // Swept Dorsal Scythe Spikes Along Back
+      if (i % 2 === 0 && i > 2 && i < NUM_SEGMENTS - 4) {
+        ctx.fillStyle = '#ff1e27';
         ctx.beginPath();
-        ctx.moveTo(r * 0.6, -r * 0.9);
-        ctx.quadraticCurveTo(-r * 1.2, -r * 2.8, -r * 2.8, -r * 3.1);
-        ctx.quadraticCurveTo(-r * 1.4, -r * 1.5, -r * 0.6, -r * 0.9);
+        ctx.moveTo(2, -halfW * 0.8);
+        ctx.quadraticCurveTo(-8 * depthScale, -halfW * 3.4, -19 * depthScale, -halfW * 4.0);
+        ctx.quadraticCurveTo(-9 * depthScale, -halfW * 1.8, -3, -halfW * 0.7);
         ctx.closePath();
         ctx.fill();
       }
 
       ctx.restore();
-
-      // Flame-Tufted Tail Tip
-      if (i === spineTrail.length - 1 && spineTrail.length > 16) {
-        drawSerpentFlameTail(ctx, curr.x, curr.y, angle, depthScale, segAlpha);
-      }
     }
 
-    // Draw Horned Head & Wavy Tongue at Segment 0
-    if (spineTrail.length > 1) {
-      const h = spineTrail[0];
-      const n = spineTrail[1];
-      const headAngle = Math.atan2(h.y - n.y, h.x - n.x);
-      const headScale = 0.82 + (h.z + 1) * 0.2;
-      const headCtx = h.z >= 0 ? frontCtx : backCtx;
+    // Draw Head while uHead <= 1.02
+    if (uHead > 0 && uHead <= 1.02) {
+      const hPos = evaluateDragonCurve(Math.min(1.0, uHead));
+      const hAngle = evaluateDragonTangent(Math.min(1.0, uHead));
+      const hScale = 0.82 + (hPos.z + 1) * 0.2;
+      const hAlpha = uHead > 0.92 ? Math.max(0, (1.02 - uHead) / 0.1) : Math.min(1, uHead * 4);
+      const hCtx = hPos.z >= 0 ? frontCtx : backCtx;
 
-      drawSerpentHead202378(headCtx, h.x, h.y, headAngle, headScale, fadeOut, elapsed * 0.025);
+      drawOrbitDragonHead(hCtx, hPos.x, hPos.y, hAngle, hScale, hAlpha);
 
-      if (Math.random() < 0.5) {
+      if (Math.random() < 0.6) {
         spawnOrbitEmber(
-          h.x + Math.cos(headAngle) * 18,
-          h.y + Math.sin(headAngle) * 18,
-          Math.cos(headAngle) * 1.5,
-          Math.sin(headAngle) * 1.5
+          hPos.x + Math.cos(hAngle) * 14,
+          hPos.y + Math.sin(hAngle) * 14,
+          Math.cos(hAngle) * 1.4,
+          Math.sin(hAngle) * 1.4,
+          false
         );
+      }
+
+      // Burst of embers right as the head merges into the perched crest
+      if (uHead > 0.96 && uHead < 1.0) {
+        spawnOrbitEmber(hPos.x, hPos.y, 0, -1, true);
       }
     }
   }
@@ -392,7 +436,7 @@ function animateSerpentOrbit(ts) {
 }
 
 /* =========================================================
-   4. INTRO & OUTRO PORTAL CONTROLLERS
+   5. INTRO & OUTRO PORTAL CONTROLLERS
    ========================================================= */
 function replayIntro() {
   const portalEl = document.getElementById('vault-portal');
@@ -406,7 +450,6 @@ function replayIntro() {
   if (statusEl) statusEl.textContent = "Summoning Class Memory Vault...";
   portalEl.classList.remove('portal-open');
 
-  spineTrail.length = 0;
   emberList.length = 0;
   orbitStartTime = 0;
 
@@ -443,8 +486,7 @@ function lockVaultOutro() {
 }
 
 /* =========================================================
-   5. SPECIAL EFFECTS ENGINE WHEN OPENING VIDEOS / EASTER EGGS
-      (DRAGON_SLASH, FIRE_BURST, LIGHTNING, EARTHQUAKE, GLITCH)
+   6. SPECIAL EFFECTS ENGINE WHEN OPENING VIDEOS / EASTER EGGS
    ========================================================= */
 const fxCanvas = document.getElementById('special-fx-canvas');
 const fxCtx = fxCanvas ? fxCanvas.getContext('2d') : null;
@@ -498,7 +540,6 @@ function triggerSpecialEffect(effectType) {
         fxCtx.shadowColor = '#e50914';
         fxCtx.lineCap = 'round';
 
-        // 3 Diagonal Dragon Claw Slashes
         [-70, 0, 70].forEach((offset, idx) => {
           const p = Math.min(1, Math.max(0, (progress - idx * 0.1) * 1.4));
           if (p <= 0) return;
@@ -592,3 +633,5 @@ function triggerSpecialEffect(effectType) {
     requestAnimationFrame(stepBolt);
   }
 }
+
+window.addEventListener('DOMContentLoaded', initExactLogoLayers);
